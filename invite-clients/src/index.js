@@ -28,7 +28,5 @@ connectDB()
   });
 
 app.use("/", admin);
-
 app.use("/", authRouter);
-
 app.use("/", clientRouter);

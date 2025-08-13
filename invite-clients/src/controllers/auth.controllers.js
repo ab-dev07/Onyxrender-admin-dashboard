@@ -4,9 +4,13 @@ const clientRouter = express.Router();
 const { Invite } = require("../models/invites");
 const { userSchemaValidate } = require("../validations/userSchemaValidate");
 const { sendResponse } = require("../utils/standardResponse");
-
+const { cloudinary } = require("../config/cloudinary");
+const streamifier = require("streamifier");
 const registerClient = async (req, res) => {
   const { fullname, email, password, token } = req.body;
+  // let photoUrl = null;
+  console.log(req.file);
+
   const alreadyUser = await User.findOne({ email });
   if (alreadyUser) {
     return sendResponse(res, 400, "User already exist.");
@@ -21,8 +25,22 @@ const registerClient = async (req, res) => {
   if (invite.expiredAt < Date.now()) {
     return sendResponse(res, 400, "Invitation Code Expired");
   }
+  let photoUrl = null;
+  if (req.file && req.file.buffer) {
+    photoUrl = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "images", resource_type: "auto" },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result.secure_url);
+        }
+      );
+      streamifier.createReadStream(req.file.buffer).pipe(stream);
+    });
+  }
   const user = await User.create({
     fullname,
+    photoUrl,
     email,
     password,
     role: "client",
