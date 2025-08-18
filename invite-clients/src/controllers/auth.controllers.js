@@ -6,6 +6,7 @@ const { userSchemaValidate } = require("../validations/userSchemaValidate");
 const { sendResponse } = require("../utils/standardResponse");
 const { cloudinary } = require("../config/cloudinary");
 const streamifier = require("streamifier");
+const { makeHash } = require("../utils/makeHash");
 const registerClient = async (req, res) => {
   const { fullname, email, password, token } = req.body;
   // let photoUrl = null;
@@ -38,11 +39,13 @@ const registerClient = async (req, res) => {
       streamifier.createReadStream(req.file.buffer).pipe(stream);
     });
   }
+  hashPassword = await makeHash(password);
+  console.log("new password" + hashPassword);
   const user = await User.create({
     fullname,
     photoUrl,
     email,
-    password,
+    password: hashPassword,
     role: "client",
   });
   await user.save();
@@ -80,9 +83,14 @@ const login = async (req, res) => {
 
     return sendResponse(res, 400, "You are not admin");
   } else if (role == "client") {
-    const user = await User.findOne({ email, password });
+    const user = await User.findOne({ email });
+
     if (!user) {
       return sendResponse(res, 400, "Client not found.", user);
+    }
+    const isPasswordValid = await user.validatePassword(password);
+    if (!isPasswordValid) {
+      return sendResponse(res, 400, "Password is not validate.");
     }
     const token = await user.getJWT();
     res.cookie("token", token);

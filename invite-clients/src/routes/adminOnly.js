@@ -8,9 +8,43 @@ const { sendResponse } = require("../utils/standardResponse");
 const { validateProject } = require("../validations/projectSchemaValidate");
 const project = require("../models/project");
 const Project = require("../models/project");
+const { Invite } = require("../models/invites");
+const { sendInvitationEmail } = require("../utils/sendMail");
 
 const admin = express.Router();
-
+admin.post(
+  "/admin-only/invite-client",
+  isLoggedIn,
+  isAdmin,
+  async (req, res) => {
+    let { email, days = 1 } = req.body;
+    const expiredAt = Date.now() + days * 24 * 60 * 60 * 1000;
+    let invite = await Invite.findOne({ email });
+    const token = Math.floor(100000 + Math.random() * 900000);
+    console.log(token);
+    if (!invite) {
+      invite = await Invite.create({ email, expiredAt, token });
+      await sendInvitationEmail(email, token);
+      return sendResponse(res, 200, "Invitation Send", invite);
+    }
+    if (invite.used == "used") {
+      return sendResponse(res, 400, "This user is already register.");
+    }
+    if (invite.used === "not-used" && invite.expiredAt > Date.now()) {
+      return sendResponse(res, 400, "Already sent invite to mail.");
+    }
+    if (invite.used === "not-used" && invite.expiredAt < Date.now()) {
+      await sendInvitationEmail(email, token);
+      const invite = await Invite.findOneAndUpdate(
+        { email },
+        { $set: { expiredAt, token } },
+        { new: true }
+      );
+      return sendResponse(res, 200, "Invitation Send", invite);
+    }
+    return sendResponse(res, 200, "No action performed", invite);
+  }
+);
 admin.get("/admin-only/all-clients", isLoggedIn, isAdmin, async (req, res) => {
   let { page = 1, limit = 10 } = req.query;
   limit = limit > 50 ? 50 : parseInt(limit);

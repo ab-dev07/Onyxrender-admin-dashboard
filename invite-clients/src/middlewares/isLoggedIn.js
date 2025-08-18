@@ -7,7 +7,7 @@ const isLoggedIn = async (req, res, next) => {
   if (!token) {
     return sendResponse(res, 400, "First login then access this");
   }
-  const decoded = jwt.verify(token, "secretKey");
+  const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
   if (!decoded) {
     return sendResponse(res, 400, "Invalid token");
   }

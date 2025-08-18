@@ -19,11 +19,7 @@ const inviteSchema = new mongoose.Schema(
       enums: ["not-used", "used"],
       default: "not-used",
     },
-    status: {
-      type: String,
-      enum: ["not-used", "used", "expired"],
-      default: "not-used",
-    },
+    
   },
   {
     timestamps: true,
