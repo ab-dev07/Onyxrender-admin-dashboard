@@ -14,6 +14,8 @@ const { admin } = require("./routes/adminOnly");
 const { isLoggedIn } = require("./middlewares/isLoggedIn");
 const { isAdmin } = require("./middlewares/isAdmin");
 const { clientRouter } = require("./routes/client");
+const cors = require("cors");
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 app.use(cookieParser());
 // Start server

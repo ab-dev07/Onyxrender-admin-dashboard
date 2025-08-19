@@ -7,8 +7,9 @@ const { sendResponse } = require("../utils/standardResponse");
 const { cloudinary } = require("../config/cloudinary");
 const streamifier = require("streamifier");
 const { makeHash } = require("../utils/makeHash");
+
 const registerClient = async (req, res) => {
-  const { fullname, email, password, token } = req.body;
+  const { fullname, password, token } = req.body;
   // let photoUrl = null;
   console.log(req.file);
 
@@ -16,7 +17,7 @@ const registerClient = async (req, res) => {
   if (alreadyUser) {
     return sendResponse(res, 400, "User already exist.");
   }
-  const invite = await Invite.findOne({ email });
+  const invite = await Invite.findOne({ token });
   if (!invite) {
     return sendResponse(res, 400, "Not invited (Asked Admin for invite)");
   }
@@ -44,7 +45,7 @@ const registerClient = async (req, res) => {
   const user = await User.create({
     fullname,
     photoUrl,
-    email,
+    email: invite.email,
     password: hashPassword,
     role: "client",
   });

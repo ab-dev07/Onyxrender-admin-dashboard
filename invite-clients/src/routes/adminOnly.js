@@ -10,6 +10,7 @@ const project = require("../models/project");
 const Project = require("../models/project");
 const { Invite } = require("../models/invites");
 const { sendInvitationEmail } = require("../utils/sendMail");
+const crypto = require("crypto"); // Make sure this is at the top of your file
 
 const admin = express.Router();
 admin.post(
@@ -20,7 +21,7 @@ admin.post(
     let { email, days = 1 } = req.body;
     const expiredAt = Date.now() + days * 24 * 60 * 60 * 1000;
     let invite = await Invite.findOne({ email });
-    const token = Math.floor(100000 + Math.random() * 900000);
+    const token = crypto.randomBytes(20).toString("hex");
     console.log(token);
     if (!invite) {
       invite = await Invite.create({ email, expiredAt, token });

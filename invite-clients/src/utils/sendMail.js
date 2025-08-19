@@ -8,30 +8,24 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendInvitationEmail = async (to, code) => {
-  console.log("1");
-  console.log("Email:", process.env.EMAIL_USER);
-  console.log("Pass:", process.env.EMAIL_PASSWORD);
-
+const sendInvitationEmail = async (to, token) => {
+  const inviteLink = `https://localhost:3000/dashboard?token=${token}`;
   const mailOption = {
     from: "OnyxRender",
     to,
     subject: "Invitation",
-    text: `Here is your invitation code: ${code}`,
+    text: `Click the link to join: ${inviteLink}`,
     html: `
-      <h2>Invitation Code</h2>
-      <p>Use the following code to join:</p>
-      <div style="font-size:20px; font-weight:bold; color:#333">${code}</div>
-      <p>This code will expire in 10 minutes.</p>
+      <h2>You're Invited!</h2>
+      <p>Click the link below to join:</p>
+      <a href="${inviteLink}" style="font-size:18px; font-weight:bold; color:#3366cc">${inviteLink}</a>
+      <p>This link will expire in 10 minutes.</p>
     `,
   };
-  console.log("2");
   try {
-    console.log("3");
     const info = await transporter.sendMail(mailOption);
     console.log("Message sent:", info.messageId);
   } catch (err) {
-    console.log("4");
     console.error("Mail error:", err);
   }
 };
