@@ -13,7 +13,7 @@ const registerClient = async (req, res) => {
   // let photoUrl = null;
   console.log(req.file);
 
-  const alreadyUser = await User.findOne({ email });
+  const alreadyUser = await User.findOne({ token });
   if (alreadyUser) {
     return sendResponse(res, 400, "User already exist.");
   }
