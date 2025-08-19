@@ -42,6 +42,7 @@ const registerClient = async (req, res) => {
   }
   hashPassword = await makeHash(password);
   console.log("new password" + hashPassword);
+  console.log(invite);
   const user = await User.create({
     fullname,
     photoUrl,
@@ -51,7 +52,7 @@ const registerClient = async (req, res) => {
   });
   await user.save();
   await Invite.findOneAndUpdate(
-    { email, token },
+    { email: invite.email, token },
     {
       $set: {
         used: "used",
