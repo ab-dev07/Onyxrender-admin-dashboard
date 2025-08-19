@@ -18,7 +18,7 @@ const sendInvitationEmail = async (to, token) => {
     html: `
       <h2>You're Invited!</h2>
       <p>Click the link below to join:</p>
-      <a href="${inviteLink}" style="font-size:18px; font-weight:bold; color:#3366cc">${inviteLink}</a>
+      <a href="${inviteLink}" style="font-size:18px; font-weight:bold; color:#3366cc">Join</a></a>
       <p>This link will expire in 10 minutes.</p>
     `,
   };
