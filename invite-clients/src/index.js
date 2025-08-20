@@ -29,6 +29,6 @@ connectDB()
     console.error("DB connection failed:", err);
   });
 
-app.use("/", admin);
+app.use("/admin-only", admin);
 app.use("/", authRouter);
 app.use("/", clientRouter);

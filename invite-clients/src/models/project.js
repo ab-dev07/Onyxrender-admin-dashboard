@@ -41,6 +41,11 @@ const projectSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    description: {
+      type: String,
+      trim: true,
+      default: "No details given.",
+    },
   },
   { timestamps: true }
 );

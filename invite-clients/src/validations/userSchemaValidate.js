@@ -1,24 +1,27 @@
 const Joi = require("joi");
 const userSchemaValidate = Joi.object({
-  name: Joi.string().default("Client").messages({
-    "string.base": "Name must be a string.",
+  name: Joi.string(),
+  email: Joi.string().email().required().messages({
+    "string.email": "Invalid email.",
+    "any.required": "Email is required.",
   }),
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
+  password: Joi.string()
     .required()
-    .messages({
-      "string.email": "Please provide a valid email address.",
-      "any.required": "Email is required.",
-    }),
-  password: Joi.string().required().messages({
-    "any.required": "Password is required.",
-  }),
+    .messages({ "any.required": "Password is required." }),
+  profilePic: Joi.string()
+    .uri()
+    .allow("")
+    .messages({ "string.uri": "Profile picture must be a valid URL." }),
+  companyName: Joi.string().allow(""),
+  companyLogo: Joi.string()
+    .uri()
+    .allow("")
+    .messages({ "string.uri": "Company logo must be a valid URL." }),
+  address: Joi.string().allow(""),
+  phoneNo: Joi.string().allow(""),
   role: Joi.string().valid("admin", "client").required().messages({
-    "any.only": "Role must be either 'admin' or 'client'.",
+    "any.only": "Role must be admin or client.",
     "any.required": "Role is required.",
-  }),
-  photoUrl: Joi.string().uri().default("example.com").messages({
-    "string.uri": "Photo URL must be a valid URI.",
   }),
 });
 module.exports = {

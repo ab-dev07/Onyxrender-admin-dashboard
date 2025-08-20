@@ -4,10 +4,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const userSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      default: "Client",
-    },
+    name: { type: String, default: "Client" },
     email: {
       type: String,
       required: true,
@@ -15,10 +12,12 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    password: {
-      type: String,
-      required: true,
-    },
+    password: { type: String, required: true },
+    profilePic: { type: String, default: "" },
+    companyName: { type: String, default: "" },
+    companyLogo: { type: String, default: "" },
+    address: { type: String, default: "" },
+    phoneNo: { type: String, default: "" },
     role: {
       type: String,
       required: true,
@@ -27,14 +26,8 @@ const userSchema = new mongoose.Schema(
         message: "{VALUE} is not a valid status",
       },
     },
-    photoUrl: {
-      type: String,
-      default: "example.com",
-    },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 userSchema.methods.getJWT = async function () {
   const user = this;

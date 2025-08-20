@@ -7,9 +7,29 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD,
   },
 });
-
+const sendResetEmail = async (to, token) => {
+  const resetLink = `https://localhost:3000/dashboard/register-client?token=${token}`;
+  const mailOption = {
+    from: "OnyxRender",
+    to,
+    subject: "Reset Password ",
+    text: `Click the link to Reset Password: ${resetLink}`,
+    html: `
+      <h2>You're Invited!</h2>
+      <p>Click the link below to reset Password:</p>
+      <a href="${resetLink}" style="font-size:18px; font-weight:bold; color:#3366cc">Join</a></a>
+      <p>This link will expire in 10 minutes.</p>
+    `,
+  };
+  try {
+    const info = await transporter.sendMail(mailOption);
+    console.log("Message sent:", info.messageId);
+  } catch (err) {
+    console.error("Mail error:", err);
+  }
+};
 const sendInvitationEmail = async (to, token) => {
-  const inviteLink = `https://localhost:3000/dashboard?token=${token}`;
+  const inviteLink = `https://localhost:3000/dashboard/register-client?token=${token}`;
   const mailOption = {
     from: "OnyxRender",
     to,
@@ -31,4 +51,5 @@ const sendInvitationEmail = async (to, token) => {
 };
 module.exports = {
   sendInvitationEmail,
+  sendResetEmail,
 };

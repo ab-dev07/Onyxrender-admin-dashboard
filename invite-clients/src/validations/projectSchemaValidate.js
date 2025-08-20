@@ -7,6 +7,10 @@ const validateProject = (data) => {
     clientId: Joi.string().hex().length(24).required().messages({
       "string.hex": "Client ID must be a valid ObjectId.",
     }),
+    description: Joi.string()
+      .trim()
+      .empty("") // treat "" as undefined
+      .default("No details given."),
     status: Joi.string().valid("pending", "completed").default("pending"),
     budget: Joi.number().min(0).required().messages({
       "number.base": "Budget must be a number.",

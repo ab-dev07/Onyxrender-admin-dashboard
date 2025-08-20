@@ -25,8 +25,8 @@ clientRouter.get("/client/profile", isLoggedIn, async (req, res) => {
 clientRouter.put("/client/profile", isLoggedIn, async (req, res) => {
   try {
     const user = req.user;
-    const { name, photoUrl } = req.body;
-    if (name && photoUrl) {
+    const { name, profilePic } = req.body;
+    if (name && profilePic) {
       return res.send("Dont send empty body");
     }
     if (user) {
@@ -35,7 +35,7 @@ clientRouter.put("/client/profile", isLoggedIn, async (req, res) => {
         {
           $set: {
             name,
-            photoUrl,
+            profilePic,
           },
         },
         {
