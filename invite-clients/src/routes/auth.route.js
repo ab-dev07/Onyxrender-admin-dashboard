@@ -1,5 +1,5 @@
 const express = require("express");
-const { registerClient, login } = require("../controllers/auth.controllers");
+const { registerClient, login, getUser } = require("../controllers/auth.controllers");
 const { User } = require("../models/users");
 const { userSchemaValidate } = require("../validations/userSchemaValidate");
 const { isLoggedIn } = require("../middlewares/isLoggedIn");
@@ -22,6 +22,12 @@ authRouter.post(
 
 //used by client and admin to login
 authRouter.post("/auth/login", login);
+
+
+//used to get the details of the logged in user
+authRouter.get("/auth/user", isLoggedIn, getUser);
+
+
 
 module.exports = {
   authRouter,

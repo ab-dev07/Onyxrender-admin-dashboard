@@ -99,7 +99,16 @@ const login = async (req, res) => {
     return sendResponse(res, 200, "Client Login Successfully", user);
   }
 };
+
+
+const getUser = (req, res) => {
+  const user = req.user;
+  // Remove sensitive info like password
+  if (user.password) user.password = undefined;
+  sendResponse(res, 200, "User fetched successfully", user);
+}
 module.exports = {
   registerClient,
   login,
+  getUser
 };
