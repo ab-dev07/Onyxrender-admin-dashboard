@@ -13,7 +13,7 @@ const { Token } = require("../models/token");
 const bcrypt = require("bcrypt");
 
 exports.registerClient = async (req, res) => {
-  const { name, email, password, companyName, address, phoneNo, token, role } =
+  let { name, email, password, companyName, address, phoneNo, token, role } =
     req.body;
   // let profilePic = null;
   console.log(req.file);
@@ -103,7 +103,7 @@ exports.login = async (req, res) => {
     }
     const isPasswordValid = await user.validatePassword(password);
     if (!isPasswordValid) {
-      return sendResponse(res, 400, "Password is not validate.");
+      return sendResponse(res, 400, "Email or Password is incorrect.");
     }
     const token = await user.getJWT();
     res.cookie("token", token);
@@ -136,7 +136,7 @@ exports.forget_password = async (req, res) => {
     const timeLeft = Math.ceil((existingToken.expiredAt - Date.now()) / 60000); // minutes
     return sendResponse(
       res,
-      400,
+      200,
       `A reset link was already sent. Please check your email. You can request again after ${timeLeft} minute(s).`
     );
   }
