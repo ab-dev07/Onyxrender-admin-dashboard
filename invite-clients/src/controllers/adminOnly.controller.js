@@ -1,4 +1,5 @@
 const { Invite } = require("../models/invites");
+const { Invoice, invoiceValidation } = require("../models/invoice");
 const Project = require("../models/project");
 const { User } = require("../models/users");
 const { sendResponse } = require("../utils/standardResponse");
@@ -202,3 +203,110 @@ exports.delete_client = async (req, res) => {
     res.send("err::" + err.message);
   }
 };
+
+//invoices at admin side
+exports.create_invoice = async (req, res) => {
+  // Validate request body
+  const { error, value } = invoiceValidation.validate(req.body, {
+    abortEarly: false, // show all errors, not just first
+  });
+
+  if (error) {
+    return sendResponse(
+      res,
+      400,
+      "Validation Error",
+      error.details.map((err) => err.message)
+    );
+  }
+  const project = await Project.findById(req.body.projectId);
+  if (!project) return sendResponse(res, 404, "No Project Found.");
+  const invoice = await Invoice.create(value);
+  sendResponse(res, 201, "Invoice created successfully", invoice);
+};
+
+exports.all_invoices = async (req, res) => {
+  let page = parseInt(req.query.page) || 1;
+  let limit = parseInt(req.query.limit) || 10;
+
+  // max limit protection
+  limit = limit > 50 ? 50 : limit;
+
+  const totalitems = await Invoice.countDocuments();
+  const skip = (page - 1) * limit;
+  const totalpage = Math.ceil(totalitems / limit);
+
+  const meta = {
+    totalitems,
+    itemsperpage: limit,
+    currentpage: page,
+    totalpage,
+  };
+
+  const invoices = await Invoice.find()
+    .populate({
+      path: "projectId",
+      select: "title clientId",
+      populate: {
+        path: "clientId",
+        select: "name profilePic email",
+      },
+    })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  sendResponse(res, 200, "Invoices fetched successfully", invoices, meta);
+};
+exports.update_invoice = async (req, res) => {
+  // try {
+  const updatedInvoice = await Invoice.findByIdAndUpdate(
+    req.params.id,
+    { $set: req.body },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedInvoice) {
+    return sendResponse(res, 404, "Invoice not found");
+  }
+
+  sendResponse(res, 200, "Invoice updated successfully", updatedInvoice);
+  // } catch (error) {
+  //   console.error("Update Invoice Error:", error);
+  //   sendResponse(res, 500, "Something went wrong", error.message);
+  // }
+};
+
+// ✅ Delete Invoice
+exports.delete_invoice = async (req, res) => {
+  const deletedInvoice = await Invoice.findByIdAndDelete(req.params.id);
+
+  if (!deletedInvoice) {
+    return sendResponse(res, 404, "Invoice not found");
+  }
+
+  sendResponse(res, 200, "Invoice deleted successfully", deletedInvoice);
+};
+
+// ✅ Get Single Invoice
+// exports.get_invoice_by_id = async (req, res) => {
+//   try {
+//     const invoice = await Invoice.findById(req.params.id).populate({
+//       path: "projectId",
+//       select: "name clientId",
+//       populate: {
+//         path: "clientId",
+//         select: "name profilePic email",
+//       },
+//     });
+
+//     if (!invoice) {
+//       return sendResponse(res, 404, "Invoice not found");
+//     }
+
+//     sendResponse(res, 200, "Invoice fetched successfully", invoice);
+//   } catch (error) {
+//     console.error("Get Invoice Error:", error);
+//     sendResponse(res, 500, "Something went wrong", error.message);
+//   }
+// };

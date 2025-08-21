@@ -210,3 +210,44 @@ exports.change_password = async (req, res) => {
 
   sendResponse(res, 200, "Password changed successfully.");
 };
+
+exports.get_profile = async (req, res) => {
+  const user = req.user;
+  // Remove sensitive info like password
+  if (user.password) user.password = undefined;
+  sendResponse(res, 200, "User fetched successfully", user);
+};
+
+exports.update_invoice = async (req, res) => {
+  const allowedFields = [
+    "amount",
+    "status",
+    "issueDate",
+    "dueDate",
+    "description",
+    "currency",
+  ];
+  const updates = {};
+
+  // pick only allowed fields from req.body
+  allowedFields.forEach((field) => {
+    if (req.body[field] !== undefined) {
+      updates[field] = req.body[field];
+    }
+  });
+
+  if (Object.keys(updates).length === 0) {
+    return sendResponse(res, 400, "No valid fields provided to update");
+  }
+  const updatedInvoice = await Invoice.findByIdAndUpdate(
+    req.params.id,
+    { $set: updates },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedInvoice) {
+    return sendResponse(res, 404, "Invoice not found");
+  }
+
+  sendResponse(res, 200, "Invoice updated successfully", updatedInvoice);
+};
