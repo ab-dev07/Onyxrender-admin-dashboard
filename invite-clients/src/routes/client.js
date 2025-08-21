@@ -7,74 +7,25 @@ const { isAdmin } = require("../middlewares/isAdmin");
 const { object } = require("joi");
 const Project = require("../models/project");
 const { sendResponse } = require("../utils/standardResponse");
+const {
+  get_profile,
+  update_profile,
+  all_projects,
+} = require("../controllers/adminOnly.controller");
+const {
+  user_insights,
+  user_invoices,
+} = require("../controllers/client.controller");
 
 //client can get profile
-clientRouter.get("/client/profile", isLoggedIn, async (req, res) => {
-  try {
-    const user = req.user;
-    if (user) {
-      return res.send(user);
-    } else {
-      throw new Error("User not found");
-    }
-  } catch (err) {
-    res.send("err::" + err.message);
-  }
-});
-//client can update profile
-clientRouter.put("/client/profile", isLoggedIn, async (req, res) => {
-  try {
-    const user = req.user;
-    const { name, profilePic } = req.body;
-    if (name && profilePic) {
-      return res.send("Dont send empty body");
-    }
-    if (user) {
-      const updatedUser = await User.findOneAndUpdate(
-        { email: user.email },
-        {
-          $set: {
-            name,
-            profilePic,
-          },
-        },
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
-      return res.send(updatedUser);
-    } else {
-      throw new Error("User not found");
-    }
-  } catch (err) {
-    res.send("err::" + err.message);
-  }
-});
-clientRouter.get("/client/all-projects", isLoggedIn, async (req, res) => {
-  try {
-    const user = req.user;
-    let page = parseInt(req.query.page) || 1;
-    let limit = parseInt(req.query.limit) || 10;
-    limit = limit > 50 ? 50 : limit;
-    const totalitems = await Project.countDocuments({ clientId: user._id });
-    const skip = (page - 1) * limit;
-    const totalpage = Math.ceil(totalitems / limit);
-    const meta = {
-      totalitems,
-      itemsperpage: limit,
-      currentpage: page,
-      totalpage,
-    };
-    const allProjects = await Project.find({ clientId: user._id })
-      .populate("clientId", ["name", "email"])
-      .skip(skip)
-      .limit(limit);
-    sendResponse(res, 200, "All Projects get successfully", allProjects, meta);
-  } catch (err) {
-    res.send("err::" + err.message);
-  }
-});
+clientRouter.use(isLoggedIn);
+clientRouter.get("/profile", get_profile);
+clientRouter.put("/profile", update_profile);
+
+clientRouter.get("/all-projects", all_projects);
+
+clientRouter.get("/insights", user_insights);
+clientRouter.get("/all-invoices", user_invoices);
 module.exports = {
   clientRouter,
 };

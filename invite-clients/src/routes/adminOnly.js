@@ -24,12 +24,11 @@ const {
   all_invoices,
   delete_invoice,
   update_invoice,
-} = require("../controllers/adminOnly.controller");
-const {
-  registerClient,
   get_profile,
   update_profile,
-} = require("../controllers/auth.controllers");
+  get_insights,
+} = require("../controllers/adminOnly.controller");
+const { registerClient } = require("../controllers/auth.controllers");
 
 const admin = express.Router();
 
@@ -51,7 +50,7 @@ admin.get("/all-project", all_projects);
 admin.delete("/project/:id", delete_project);
 admin.put("/project/:id", update_project);
 
-//invoice section at admin side
+// invoice section at admin side
 admin.post("/create-invoice", create_invoice);
 admin.get("/all-invoices", all_invoices);
 admin.delete("/invoice/:id", delete_invoice);
@@ -60,6 +59,9 @@ admin.put("/invoice/:id", update_invoice);
 // invites at admin side
 admin.get("/all-invites", all_invites);
 admin.delete("/invite/:id", delete_invite);
+
+//insights
+admin.get("/insights", get_insights);
 
 //
 

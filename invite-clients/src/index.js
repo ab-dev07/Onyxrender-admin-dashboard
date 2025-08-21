@@ -30,5 +30,5 @@ connectDB()
   });
 
 app.use("/admin-only", admin);
+app.use("/client", clientRouter);
 app.use("/", authRouter);
-app.use("/", clientRouter);

@@ -80,28 +80,52 @@ exports.create_project = async (req, res) => {
   return sendResponse(res, 200, "Project created successfully", project);
 };
 exports.all_projects = async (req, res) => {
-  try {
-    const user = req.user;
-    let page = parseInt(req.query.page) || 1;
-    let limit = parseInt(req.query.limit) || 10;
-    limit = limit > 50 ? 50 : limit;
-    const totalitems = await Project.countDocuments();
-    const skip = (page - 1) * limit;
-    const totalpage = Math.ceil(totalitems / limit);
-    const meta = {
-      totalitems,
-      itemsperpage: limit,
-      currentpage: page,
-      totalpage,
-    };
-    const allProjects = await Project.find()
-      .populate("clientId", ["name", "email", "profilePic"])
-      .skip(skip)
-      .limit(limit);
-    sendResponse(res, 200, "All Projects get successfully", allProjects, meta);
-  } catch (err) {
-    res.send("err::" + err.message);
+  const user = req.user;
+  let page = parseInt(req.query.page) || 1;
+  let limit = parseInt(req.query.limit) || 10;
+  limit = limit > 50 ? 50 : limit;
+  const skip = (page - 1) * limit;
+
+  let filter = {};
+  let projection = {};
+  let populate = null;
+
+  if (user.role === "client") {
+    filter = { clientId: user._id }; // ✅ filter projects for that client
+    projection = "-clientId"; // don’t expose clientId
+  } else if (user.role === "admin") {
+    filter = {}; // all projects
+    populate = { path: "clientId", select: "name email profilePic" }; // ✅ add client info
   }
+
+  const totalitems = await Project.countDocuments(filter);
+  const totalpage = Math.ceil(totalitems / limit);
+
+  const allProjectsQuery = Project.find(filter)
+    .select(projection)
+    .skip(skip)
+    .limit(limit);
+
+  if (populate) {
+    allProjectsQuery.populate(populate);
+  }
+
+  const allProjects = await allProjectsQuery;
+
+  const meta = {
+    totalitems,
+    itemsperpage: limit,
+    currentpage: page,
+    totalpage,
+  };
+
+  sendResponse(
+    res,
+    200,
+    "All Projects fetched successfully",
+    allProjects,
+    meta
+  );
 };
 exports.delete_project = async (req, res) => {
   try {
@@ -224,7 +248,6 @@ exports.create_invoice = async (req, res) => {
   const invoice = await Invoice.create(value);
   sendResponse(res, 201, "Invoice created successfully", invoice);
 };
-
 exports.all_invoices = async (req, res) => {
   let page = parseInt(req.query.page) || 1;
   let limit = parseInt(req.query.limit) || 10;
@@ -259,10 +282,29 @@ exports.all_invoices = async (req, res) => {
   sendResponse(res, 200, "Invoices fetched successfully", invoices, meta);
 };
 exports.update_invoice = async (req, res) => {
-  // try {
+  const allowedFields = [
+    "amount",
+    "status",
+    "issueDate",
+    "dueDate",
+    "description",
+    "currency",
+  ];
+  const updates = {};
+
+  // pick only allowed fields from req.body
+  allowedFields.forEach((field) => {
+    if (req.body[field] !== undefined) {
+      updates[field] = req.body[field];
+    }
+  });
+
+  if (Object.keys(updates).length === 0) {
+    return sendResponse(res, 400, "No valid fields provided to update");
+  }
   const updatedInvoice = await Invoice.findByIdAndUpdate(
     req.params.id,
-    { $set: req.body },
+    { $set: updates },
     { new: true, runValidators: true }
   );
 
@@ -271,13 +313,7 @@ exports.update_invoice = async (req, res) => {
   }
 
   sendResponse(res, 200, "Invoice updated successfully", updatedInvoice);
-  // } catch (error) {
-  //   console.error("Update Invoice Error:", error);
-  //   sendResponse(res, 500, "Something went wrong", error.message);
-  // }
 };
-
-// ✅ Delete Invoice
 exports.delete_invoice = async (req, res) => {
   const deletedInvoice = await Invoice.findByIdAndDelete(req.params.id);
 
@@ -288,7 +324,40 @@ exports.delete_invoice = async (req, res) => {
   sendResponse(res, 200, "Invoice deleted successfully", deletedInvoice);
 };
 
-// ✅ Get Single Invoice
+exports.get_profile = async (req, res) => {
+  const user = req.user;
+  // Remove sensitive info like password
+  if (user.password) user.password = undefined;
+  sendResponse(res, 200, "User fetched successfully", user);
+};
+exports.update_profile = async (req, res) => {
+  const userId = req.user._id;
+  const { companyName, address, phoneNo, name } = req.body;
+
+  const updates = {};
+  if (companyName !== undefined) updates.companyName = companyName;
+  if (address !== undefined) updates.address = address;
+  if (phoneNo !== undefined) updates.phoneNo = phoneNo;
+  if (name !== undefined) updates.name = name;
+
+  if (Object.keys(updates).length === 0) {
+    return sendResponse(res, 400, "No valid fields provided to update");
+  }
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select("-password");
+    if (!updatedUser) {
+      return sendResponse(res, 404, "User not found");
+    }
+    sendResponse(res, 200, "Profile updated successfully", updatedUser);
+  } catch (err) {
+    sendResponse(res, 500, "Error updating profile", err.message);
+  }
+};
 // exports.get_invoice_by_id = async (req, res) => {
 //   try {
 //     const invoice = await Invoice.findById(req.params.id).populate({
@@ -310,3 +379,75 @@ exports.delete_invoice = async (req, res) => {
 //     sendResponse(res, 500, "Something went wrong", error.message);
 //   }
 // };
+
+//insighs
+
+exports.get_insights = async (req, res) => {
+  // Clients (excluding admins)
+  const totalClients = await User.countDocuments({ role: { $ne: "admin" } });
+
+  // Projects
+  const totalProjects = await Project.countDocuments();
+  const completedProjects = await Project.countDocuments({
+    status: "completed",
+  });
+  const ongoingProjects = await Project.countDocuments({ status: "ongoing" });
+
+  // Invoices
+  const totalInvoices = await Invoice.countDocuments();
+  const completedInvoices = await Invoice.countDocuments({
+    status: "completed",
+  });
+  const pendingInvoices = await Invoice.countDocuments({ status: "pending" });
+
+  const totalPayment = await Invoice.aggregate([
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+  const completedPayment = await Invoice.aggregate([
+    { $match: { status: "completed" } },
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+  const pendingPayment = await Invoice.aggregate([
+    { $match: { status: "pending" } },
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+
+  // Invites
+  const totalInvites = await Invite.countDocuments();
+  const acceptedInvites = await Invite.countDocuments({ used: "used" });
+  const pendingInvites = await Invite.countDocuments({
+    used: "not-used",
+    expiredAt: { $gt: Date.now() },
+  });
+  const expiredInvites = await Invite.countDocuments({
+    used: "not-used",
+    expiredAt: { $lt: Date.now() },
+  });
+
+  const insights = {
+    clients: totalClients,
+    projects: {
+      total: totalProjects,
+      completed: completedProjects,
+      ongoing: ongoingProjects,
+    },
+    invoices: {
+      total: totalInvoices,
+      completed: completedInvoices,
+      pending: pendingInvoices,
+    },
+    payments: {
+      total: totalPayment[0]?.total || 0,
+      completed: completedPayment[0]?.total || 0,
+      pending: pendingPayment[0]?.total || 0,
+    },
+    invites: {
+      total: totalInvites,
+      accepted: acceptedInvites,
+      pending: pendingInvites,
+      expired: expiredInvites,
+    },
+  };
+
+  sendResponse(res, 200, "Insights fetched successfully", insights);
+};
