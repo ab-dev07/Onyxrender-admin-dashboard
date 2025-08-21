@@ -8,7 +8,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 const sendResetEmail = async (to, token) => {
-  const resetLink = `https://localhost:3000/dashboard/register-client?token=${token}`;
+  const resetLink = `http://localhost:3000/dashboard/reset-password?token=${token}`;
   const mailOption = {
     from: "OnyxRender",
     to,
@@ -29,7 +29,7 @@ const sendResetEmail = async (to, token) => {
   }
 };
 const sendInvitationEmail = async (to, token) => {
-  const inviteLink = `https://localhost:3000/dashboard/register-client?token=${token}`;
+  const inviteLink = `http://localhost:3000/dashboard/register-client?token=${token}`;
   const mailOption = {
     from: "OnyxRender",
     to,

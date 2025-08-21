@@ -4,6 +4,7 @@ const Project = require("../models/project");
 const { User } = require("../models/users");
 const { sendResponse } = require("../utils/standardResponse");
 const { validateProject } = require("../validations/projectSchemaValidate");
+const { sendInvitationEmail } = require("../utils/sendMail")
 const crypto = require("crypto");
 exports.all_invites = async (req, res) => {
   try {
@@ -193,18 +194,23 @@ exports.all_clients = async (req, res) => {
   let { page = 1, limit = 10 } = req.query;
   limit = limit > 50 ? 50 : parseInt(limit);
   const skip = (parseInt(page) - 1) * parseInt(limit);
+
   const totalitems = await User.countDocuments({ role: { $ne: "admin" } });
   const totalpages = Math.ceil(totalitems / limit);
+
   const meta = {
     totalitems,
     itemsperpage: limit,
-    currentpage: page,
+    currentpage: parseInt(page),
     totalpages,
   };
+
   const all_client = await User.find({ role: { $ne: "admin" } })
-    .select("-password ")
+    .select("-password")
+    .sort({ createdAt: -1 }) // Sort by createdAt in descending order (newest first)
     .skip(skip)
     .limit(limit);
+
   sendResponse(res, 200, "All clients get successfully", all_client, meta);
 };
 exports.delete_client = async (req, res) => {
@@ -212,6 +218,7 @@ exports.delete_client = async (req, res) => {
     const id = req.params.id;
     const userProjects = await Project.countDocuments({ clientId: id });
     if (userProjects) {
+      console.log("Projects", userProjects)
       return sendResponse(
         res,
         400,
@@ -330,6 +337,8 @@ exports.get_profile = async (req, res) => {
   if (user.password) user.password = undefined;
   sendResponse(res, 200, "User fetched successfully", user);
 };
+
+
 exports.update_profile = async (req, res) => {
   const userId = req.user._id;
   const { companyName, address, phoneNo, name } = req.body;
