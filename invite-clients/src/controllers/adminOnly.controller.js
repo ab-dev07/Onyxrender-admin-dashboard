@@ -92,11 +92,11 @@ exports.all_projects = async (req, res) => {
   let populate = null;
 
   if (user.role === "client") {
-    filter = { clientId: user._id }; // ✅ filter projects for that client
-    projection = "-clientId"; // don’t expose clientId
+    filter = { clientId: user._id }; // ✅ only that client's projects
+    projection = "-clientId"; // hide clientId
   } else if (user.role === "admin") {
-    filter = {}; // all projects
-    populate = { path: "clientId", select: "name email profilePic" }; // ✅ add client info
+    filter = {}; // ✅ all projects
+    populate = { path: "clientId", select: "name email profilePic" };
   }
 
   const totalitems = await Project.countDocuments(filter);
@@ -104,6 +104,7 @@ exports.all_projects = async (req, res) => {
 
   const allProjectsQuery = Project.find(filter)
     .select(projection)
+    .sort({ createdAt: -1 }) // ✅ latest first
     .skip(skip)
     .limit(limit);
 
@@ -128,6 +129,9 @@ exports.all_projects = async (req, res) => {
     meta
   );
 };
+
+
+
 exports.delete_project = async (req, res) => {
   try {
     const id = req.params.id;
@@ -213,6 +217,16 @@ exports.all_clients = async (req, res) => {
 
   sendResponse(res, 200, "All clients get successfully", all_client, meta);
 };
+
+exports.all_clients_projects = async (req, res) => {
+  try {
+    const all_clients = await User.find({ role: { $ne: "admin" } }).select("-password")
+    sendResponse(res, 200, "All clients get successfully", all_clients);
+  } catch (error) {
+    res.send("err::" + error.message)
+  }
+}
+
 exports.delete_client = async (req, res) => {
   try {
     const id = req.params.id;
