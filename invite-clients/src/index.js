@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const crypto = require("crypto");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { connectDB } = require("./config/database");
 const { User } = require("./models/users");
 const { Invite, inviteSchemaValidate } = require("./models/invites");
@@ -14,8 +15,16 @@ const { admin } = require("./routes/adminOnly");
 const { isLoggedIn } = require("./middlewares/isLoggedIn");
 const { isAdmin } = require("./middlewares/isAdmin");
 const { clientRouter } = require("./routes/client");
+
 const cors = require("cors");
+
 app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+const { stripe_webhook } = require("./controllers/client.controller");
+app.post(
+  "/client/webhook",
+  express.raw({ type: "application/json" }),
+  stripe_webhook
+);
 app.use(express.json());
 app.use(cookieParser());
 // Start server
@@ -28,6 +37,7 @@ connectDB()
   .catch((err) => {
     console.error("DB connection failed:", err);
   });
+
 
 app.use("/admin-only", admin);
 app.use("/client", clientRouter);
