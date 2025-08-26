@@ -27,6 +27,7 @@ const {
   get_profile,
   update_profile,
   get_insights,
+  all_clients_projects
 } = require("../controllers/adminOnly.controller");
 const { registerClient } = require("../controllers/auth.controllers");
 
@@ -49,6 +50,7 @@ admin.post("/create-project", create_project);
 admin.get("/all-project", all_projects);
 admin.delete("/project/:id", delete_project);
 admin.put("/project/:id", update_project);
+admin.get("/all-clients-projects", all_clients_projects)
 
 // invoice section at admin side
 admin.post("/create-invoice", create_invoice);
