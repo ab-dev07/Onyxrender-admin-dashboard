@@ -72,7 +72,6 @@ exports.create_project = async (req, res) => {
     _id: body.clientId,
     role: { $ne: "admin" },
   });
-  console.log(client);
   if (!client) {
     return sendResponse(res, 400, "Client not found");
   }

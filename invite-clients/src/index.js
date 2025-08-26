@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 8085;
 var cookieParser = require("cookie-parser");
 const { authRouter } = require("./routes/auth.route");
 const { admin } = require("./routes/adminOnly");
+const { chatRouter } = require("./routes/chat");
 const { isLoggedIn } = require("./middlewares/isLoggedIn");
 const { isAdmin } = require("./middlewares/isAdmin");
 const { clientRouter } = require("./routes/client");
@@ -32,3 +33,4 @@ connectDB()
 app.use("/admin-only", admin);
 app.use("/client", clientRouter);
 app.use("/", authRouter);
+app.use("/chat", chatRouter)
