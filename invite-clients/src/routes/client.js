@@ -30,9 +30,7 @@ clientRouter.get("/all-projects", all_projects);
 
 clientRouter.get("/insights", user_insights);
 clientRouter.get("/all-invoices", user_invoices);
-// clientRouter.put("/update-invoice-status",update_status)
 clientRouter.post("/create-checkout-session", payment);
-//clientRouter.post("/webhook", express.raw({ type: "application/json" }), stripe_webhook);
 module.exports = {
   clientRouter,
 };

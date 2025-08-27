@@ -15,11 +15,11 @@ const { admin } = require("./routes/adminOnly");
 const { isLoggedIn } = require("./middlewares/isLoggedIn");
 const { isAdmin } = require("./middlewares/isAdmin");
 const { clientRouter } = require("./routes/client");
+const { stripe_webhook } = require("./controllers/client.controller");
 
 const cors = require("cors");
 
 app.use(cors({ origin: "http://localhost:3000", credentials: true }));
-const { stripe_webhook } = require("./controllers/client.controller");
 app.post(
   "/client/webhook",
   express.raw({ type: "application/json" }),
