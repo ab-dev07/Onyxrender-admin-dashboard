@@ -6,9 +6,9 @@ const { sendResponse } = require("../utils/standardResponse");
 const { validateProject } = require("../validations/projectSchemaValidate");
 const { sendInvitationEmail } = require("../utils/sendMail")
 const crypto = require("crypto");
+const { Conversation } = require("../models/conversation");
 exports.all_invites = async (req, res) => {
   try {
-    const user = req.user;
     let page = parseInt(req.query.page) || 1;
     let limit = parseInt(req.query.limit) || 10;
     limit = limit > 50 ? 50 : limit;
@@ -474,3 +474,36 @@ exports.get_insights = async (req, res) => {
 
   sendResponse(res, 200, "Insights fetched successfully", insights);
 };
+
+exports.createClientConversation = async (req, res) => {
+  try {
+    const { clientId } = req.body;
+
+    if (!clientId) {
+      sendResponse(res, 400, "Client ID is required");
+      return;
+    }
+
+    const findClient = await User.findById(clientId);
+    if (!findClient) {
+      sendResponse(res, 404, "Client not found");
+      return;
+    }
+
+    const existingConversation = await Conversation.findOne({ clientId: clientId });
+
+    if (existingConversation) {
+      sendResponse(res, 400, "Conversation already exists", existingConversation);
+      return;
+    }
+
+    // Create a new conversation
+    const newConversation = await Conversation.create({
+      clientId: findClient._id,
+    });
+
+    sendResponse(res, 201, "Conversation created successfully", newConversation);
+  } catch (err) {
+    res.send("err::" + err.message);
+  }
+}

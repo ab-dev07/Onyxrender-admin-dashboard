@@ -1,7 +1,6 @@
 require("dotenv").config();
 const crypto = require("crypto");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const { connectDB } = require("./config/database");
 
 const { User } = require("./models/users");
 const { Invite, inviteSchemaValidate } = require("./models/invites");

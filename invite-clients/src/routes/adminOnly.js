@@ -27,7 +27,8 @@ const {
   get_profile,
   update_profile,
   get_insights,
-  all_clients_projects
+  all_clients_projects,
+  createClientConversation
 } = require("../controllers/adminOnly.controller");
 const { registerClient } = require("../controllers/auth.controllers");
 
@@ -65,7 +66,8 @@ admin.delete("/invite/:id", delete_invite);
 //insights
 admin.get("/insights", get_insights);
 
-//
+//create chat conversation
+admin.post("/create-conversation", createClientConversation);
 
 // admin.post("/auth/login-admin", registerClient);
 
