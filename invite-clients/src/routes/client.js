@@ -1,5 +1,6 @@
 const express = require("express");
 const { User } = require("../models/users");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const clientRouter = express.Router();
 const { Invite } = require("../models/invites");
 const { isLoggedIn } = require("../middlewares/isLoggedIn");
@@ -15,6 +16,9 @@ const {
 const {
   user_insights,
   user_invoices,
+  payment,
+  update_status,
+  stripe_webhook,
 } = require("../controllers/client.controller");
 
 //client can get profile
@@ -26,6 +30,7 @@ clientRouter.get("/all-projects", all_projects);
 
 clientRouter.get("/insights", user_insights);
 clientRouter.get("/all-invoices", user_invoices);
+clientRouter.post("/create-checkout-session", payment);
 module.exports = {
   clientRouter,
 };

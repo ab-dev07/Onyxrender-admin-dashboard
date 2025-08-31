@@ -1,6 +1,7 @@
 const { sendResponse } = require("../utils/standardResponse");
 const Project = require("../models/project");
 const { Invoice } = require("../models/invoice");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.user_insights = async (req, res) => {
   try {
@@ -54,4 +55,79 @@ exports.user_invoices = async (req, res) => {
     .sort({ createdAt: -1 });
 
   sendResponse(res, 200, "User invoices fetched successfully", invoices);
+};
+exports.payment = async (req, res) => {
+  try {
+    const { projectName, amount, id } = req.body;
+
+    if (!projectName || !amount) {
+      return sendResponse(res, 400, "Project name and amount are required");
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: projectName, // must not be empty
+            },
+            unit_amount: Math.round(Number(amount) * 100), // ensure number
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: "http://localhost:3000/dashboard/client/invoices",
+      cancel_url: "http://localhost:3000/dashboard/client/invoices",
+      metadata: {
+        invoiceId: id || "N/A", // optional, link to your invoice
+      },
+    });
+
+    // ✅ send back the session details (usually the URL)
+    return sendResponse(res, 200, "Payment session created", {
+      id: session.id,
+      url: session.url,
+    });
+  } catch (error) {
+    console.error("Error processing payment:", error);
+    return sendResponse(res, 500, "Something went wrong while processing payment");
+  }
+};
+exports.stripe_webhook = async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.error("❌ Webhook signature verification failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle event types
+  if (event.type === "checkout.session.completed") {
+  const session = event.data.object;
+  console.log("✅ Checkout session completed:", session.id);
+
+    const invoiceId = session.metadata?.invoiceId;
+    if (invoiceId && invoiceId !== "N/A") {
+      try {
+        const updateInvoice = await Invoice.findByIdAndUpdate(invoiceId, { status: "paid" });
+      }
+      catch (err) {
+        console.error(`❌ Error updating invoice ${invoiceId}:`, err);
+      }
+  }
+} else {
+    console.error(`Unhandled event type: ${event.type}`);
+  }
+
+  res.json({ received: true });
 };
