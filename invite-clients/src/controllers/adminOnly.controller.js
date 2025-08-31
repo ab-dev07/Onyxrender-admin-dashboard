@@ -72,7 +72,6 @@ exports.create_project = async (req, res) => {
     _id: body.clientId,
     role: { $ne: "admin" },
   });
-  console.log(client);
   if (!client) {
     return sendResponse(res, 400, "Client not found");
   }
@@ -226,6 +225,7 @@ exports.all_clients_projects = async (req, res) => {
     res.send("err::" + error.message)
   }
 }
+
 
 exports.delete_client = async (req, res) => {
   try {
