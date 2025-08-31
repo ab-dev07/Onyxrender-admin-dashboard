@@ -1,4 +1,3 @@
-const { string } = require("joi");
 const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema({
@@ -14,12 +13,12 @@ const messageSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['text', 'image', 'file', 'video'],
+        enum: ['text', 'image', 'file', 'video', 'project', 'invoice'],
         required: true
     },
     content: {
-        type: String,
-        default: "",
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
     },
     fileUrl: {
         type: String,

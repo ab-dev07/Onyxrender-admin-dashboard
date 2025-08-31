@@ -4,7 +4,8 @@ const { User } = require("../models/users");
 const { sendResponse } = require("../utils/standardResponse");
 const { mongoose } = require("mongoose");
 const { uploadCloudinary } = require("../middlewares/uploadCloudinary")
-const { chatUpload } = require("../utils/handleUpload")
+const { chatUpload } = require("../utils/handleUpload");
+const Project = require("../models/project");
 
 exports.conversation = async (req, res) => {
     try {
@@ -46,64 +47,55 @@ exports.uploadFile = async (req, res) => {
     }
 }
 
-exports.sendMessage = async (req, res) => {
+exports.sendProjectMessage = async (req, res) => {
+    console.log("Sending project message");
     try {
-        const { conversationId, content } = req.body;
+        const { clientId, messageContent } = req.body;
         const senderId = req.user._id;
 
         // Fetch conversation + sender in parallel
-        const [conversation, sender] = await Promise.all([
-            Conversation.findById(conversationId),
+        let [conversation, sender] = await Promise.all([
+            Conversation.find({ clientId: clientId }),
             User.findById(senderId),
         ]);
 
-        if (!conversation) return sendResponse(res, 400, null, "Conversation not found");
         if (!sender) return sendResponse(res, 400, null, "User not found");
-
-        const isClient = conversation.clientId.toString() === senderId.toString();
-        const isAdmin = sender.role === "admin";
-
-        if (!isClient && !isAdmin)
-            return sendResponse(res, 403, null, "Not authorized");
+        console.log("CONVERSATION", conversation)
+        // let newConversation;
+        if (conversation.length === 0) {
+            console.log("create conversation");
+            //Create Conversation
+            conversation = await Conversation.create({
+                clientId,
+                lastMessage: null,
+                adminLastSeen: null,
+                clientLastSeen: null,
+            });
+        }
 
         // Determine message type
-        let messageType = "text";
-        let messageContent = content && content.trim() ? content : "";
-
-        if (req.fileUrl) {
-            messageContent = req.fileUrl;
-            const mime = req.fileMime;
-
-            if (mime.startsWith("image/")) messageType = "image";
-            else if (mime.startsWith("video/")) messageType = "video";
-            else messageType = "file"; // docs, pdf, txt, etc.
-        }
+        let messageType = "project";
 
         if (!messageContent)
             return sendResponse(res, 400, null, "Message cannot be empty");
 
         // Create message
         const newMessage = await Message.create({
-            conversationId,
+            conversationId: conversation[0]._id,
             senderId,
             type: messageType,
             content: messageContent,
-            metadata: { text: content || "" },
+            metadata: { text: 'A project message' },
         });
 
         // Update conversation
         const now = new Date();
         let unreadUpdate = {};
-        if (isClient) {
-            if (!conversation.adminLastSeen || conversation.adminLastSeen < now)
-                unreadUpdate = { $inc: { adminUnread: 1 } };
-        } else if (isAdmin) {
-            if (!conversation.clientLastSeen || conversation.clientLastSeen < now)
-                unreadUpdate = { $inc: { clientUnread: 1 } };
-        }
+        if (!conversation.clientLastSeen || conversation.clientLastSeen < now)
+            unreadUpdate = { $inc: { clientUnread: 1 } };
 
         await Conversation.findByIdAndUpdate(
-            conversationId,
+            conversation[0]._id,
             { lastMessage: newMessage._id, ...unreadUpdate },
             { new: true }
         );
@@ -113,7 +105,94 @@ exports.sendMessage = async (req, res) => {
             "name profilePic _id"
         );
 
-        return sendResponse(res, 200, populatedMessage, "Message sent successfully");
+        if (!populatedMessage) {
+            return sendResponse(res, 404, null, "Message not sent");
+        }
+
+        return sendResponse(res, 200, "Message sent successfully", { conversationId: conversation[0]._id, clientId: conversation[0].clientId });
+    } catch (error) {
+        res.send("Error::" + error.message);
+    }
+};
+
+
+exports.sendInvoiceMessage = async (req, res) => {
+    console.log("Sending invoice message");
+    try {
+        const { projectId, messageContent } = req.body;
+        const senderId = req.user._id;
+
+        // Fetch project to find clientId
+        const project = await Project.findById(projectId);
+
+        if (!project) {
+            return sendResponse(res, 400, null, "Project not found");
+        }
+
+        clientId = project.clientId;
+
+        // Fetch conversation + sender in parallel
+        let [conversation, sender] = await Promise.all([
+            Conversation.find({ clientId: clientId }),
+            User.findById(senderId),
+        ]);
+
+        if (!sender) return sendResponse(res, 400, null, "User not found");
+        console.log("CONVERSATION", conversation)
+        // let newConversation;
+        if (conversation.length === 0) {
+            console.log("create conversation");
+            //Create Conversation
+            conversation = await Conversation.create({
+                clientId,
+                lastMessage: null,
+                adminLastSeen: null,
+                clientLastSeen: null,
+            });
+        }
+
+        // Determine message type
+        let messageType = "invoice";
+
+        if (!messageContent)
+            return sendResponse(res, 400, null, "Message cannot be empty");
+
+        const sendMessage = {
+            ...messageContent,
+            projectName: project.title,
+            projectDescription: project.description,
+        }
+        // Create message
+        const newMessage = await Message.create({
+            conversationId: conversation[0]._id,
+            senderId,
+            type: messageType,
+            content: sendMessage,
+            metadata: { text: 'An invoice message' },
+        });
+
+        // Update conversation
+        const now = new Date();
+        let unreadUpdate = {};
+        if (!conversation.clientLastSeen || conversation.clientLastSeen < now)
+            unreadUpdate = { $inc: { clientUnread: 1 } };
+
+        await Conversation.findByIdAndUpdate(
+            conversation[0]._id,
+            { lastMessage: newMessage._id, ...unreadUpdate },
+            { new: true }
+        );
+
+        const populatedMessage = await Message.findById(newMessage._id).populate(
+            "senderId",
+            "name profilePic _id"
+        );
+
+        if (!populatedMessage) {
+            return sendResponse(res, 404, null, "Message not sent");
+        }
+
+        return sendResponse(res, 200, "Message sent successfully", { conversationId: conversation[0]._id, clientId: conversation[0].clientId });
     } catch (error) {
         res.send("Error::" + error.message);
     }
@@ -121,13 +200,9 @@ exports.sendMessage = async (req, res) => {
 
 
 exports.getMessages = async (req, res) => {
-    console.log("API CALLED")
     try {
         const { conversationId } = req.params;
         const { before, limit = 10 } = req.query; // before = cursor (timestamp or messageId)
-
-        console.log("BEFORE", before)
-        console.log("LIMIT", limit)
 
         // 1. Validate ObjectId
         if (!mongoose.Types.ObjectId.isValid(conversationId)) {
@@ -136,15 +211,15 @@ exports.getMessages = async (req, res) => {
 
         // 2. Parallel: find conversation + user
         const [conversation, receiver] = await Promise.all([
-            Conversation.findById(conversationId),
+            Conversation.findById(conversationId).populate("clientId", "name email profilePic"),
             User.findById(req.user._id)
         ]);
 
-        if (!conversation) return sendResponse(res, 404, null, "Conversation not found");
-        if (!receiver) return sendResponse(res, 404, null, "User not found");
+        if (!conversation) return sendResponse(res, 400, null, "Conversation not found");
+        if (!receiver) return sendResponse(res, 400, null, "User not found");
 
         // 3. Authorization check
-        const isClient = conversation.clientId.toString() === receiver._id.toString();
+        const isClient = conversation.clientId._id.toString() === receiver._id.toString();
         const isAdmin = receiver.role === "admin";
 
         if (!isClient && !isAdmin) {
@@ -173,6 +248,11 @@ exports.getMessages = async (req, res) => {
         // Reverse so frontend gets oldest → newest (chat bubble style)
         const orderedMessages = messages.reverse();
 
+        const responseData = {
+            messages: orderedMessages,
+            client: conversation.clientId
+        }
+
 
         // 6. Prepare meta for frontend (cursor-based)
         const meta = {
@@ -181,7 +261,7 @@ exports.getMessages = async (req, res) => {
         };
 
 
-        return sendResponse(res, 200, "Messages fetched successfully", orderedMessages, meta);
+        return sendResponse(res, 200, "Messages fetched successfully", responseData, meta);
     } catch (error) {
         res.send("Error::" + error.message);
     }
