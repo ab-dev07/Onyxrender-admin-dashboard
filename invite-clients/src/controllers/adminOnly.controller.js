@@ -226,6 +226,7 @@ exports.all_clients_projects = async (req, res) => {
   }
 }
 
+
 exports.delete_client = async (req, res) => {
   try {
     const id = req.params.id;

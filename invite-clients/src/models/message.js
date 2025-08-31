@@ -1,3 +1,4 @@
+const { string } = require("joi");
 const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema({
@@ -18,7 +19,11 @@ const messageSchema = new mongoose.Schema({
     },
     content: {
         type: String,
-        required: true,
+        default: "",
+    },
+    fileUrl: {
+        type: String,
+        default: null
     },
     metadata: {
         type: Object,   // optional (e.g., file size, projectId reference, etc.)

@@ -8,7 +8,7 @@ const storage = new CloudinaryStorage({
   params: async (req, file) => {
     let folderName = "others";
     let resourceType = "auto";
-    let publicId = undefined; // Let Cloudinary generate default ID
+    let publicId = undefined;
 
     if (file.mimetype.startsWith("image/")) {
       folderName = "images";
@@ -24,9 +24,11 @@ const storage = new CloudinaryStorage({
     ) {
       folderName = "docs";
       resourceType = "raw";
-      // Add extension to public_id for documents to ensure proper URL
+      // Fix: Ensure proper extension handling
       const fileExtension = path.extname(file.originalname).toLowerCase();
-      publicId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+      publicId = `doc_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}${fileExtension}`;
     } else if (file.mimetype.startsWith("audio/")) {
       folderName = "audio";
       resourceType = "auto";
@@ -37,12 +39,49 @@ const storage = new CloudinaryStorage({
       resource_type: resourceType,
     };
 
-    // Only add public_id if we defined one (for documents)
     if (publicId) {
       params.public_id = publicId;
     }
 
     return params;
+  },
+});
+
+// Fixed document storage with better extension handling
+const docsStorage = new CloudinaryStorage({
+  cloudinary,
+  params: (req, file) => {
+    // Get file extension from original filename
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+
+    // Create public_id with extension
+    const publicId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+
+    return {
+      folder: "documents",
+      resource_type: "raw",
+      public_id: publicId,
+      // Add format parameter to ensure correct content type
+      format: fileExtension.replace('.', ''), // Remove dot from extension
+    };
+  },
+});
+
+// Alternative approach: Force extension in URL
+const docsStorageAlternative = new CloudinaryStorage({
+  cloudinary,
+  params: (req, file) => {
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+
+    return {
+      folder: "documents",
+      resource_type: "raw",
+      public_id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      // Use format parameter to ensure proper extension
+      format: fileExtension.replace('.', ''),
+      // Add flags to preserve original format
+      flags: "attachment",
+    };
   },
 });
 
@@ -78,7 +117,7 @@ const videoStorage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "videos",
-    resource_type: "video", // Fixed: was "videos", should be "video"
+    resource_type: "video",
     allowedFormats: ["mp4", "mov", "avi", "mkv"],
   },
 });
@@ -99,23 +138,6 @@ const docsFileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-// Fixed document storage with proper extension handling
-const docsStorage = new CloudinaryStorage({
-  cloudinary,
-  params: (req, file) => {
-    // Extract file extension from original filename
-    const fileExtension = path.extname(file.originalname).toLowerCase();
-
-    return {
-      folder: "documents",
-      resource_type: "raw",
-      // Include extension in public_id to ensure it appears in URL
-      public_id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`,
-      // Don't use allowedFormats for raw files as it can cause issues
-    };
-  },
-});
-
 // Generic upload
 const uploadCloudinary = multer({
   storage,
@@ -134,9 +156,9 @@ const uploadVideos = multer({
   fileFilter: videoFileFilter,
 });
 
-// For only documents
+// For only documents - use the fixed storage
 const uploadDocs = multer({
-  storage: docsStorage,
+  storage: docsStorage, // or docsStorageAlternative
   fileFilter: docsFileFilter,
 });
 

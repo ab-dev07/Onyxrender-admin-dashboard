@@ -21,12 +21,12 @@ exports.conversation = async (req, res) => {
         if (existingConversation) {
             const populatedConversation = await Conversation.findById(existingConversation._id).populate("clientId", "name profilePic _id").populate("lastMessage", "content id type status createdAt");
 
-            return sendResponse(res, 200, populatedConversation, "Conversation already exists");
+            return sendResponse(res, 200, "Conversation already exists", populatedConversation);
         }
         const newConversation = await Conversation.create({ clientId });
         // populate it with the client information and the last message
         const populatedConversation = await Conversation.findById(newConversation._id).populate("clientId", "name profilePic _id").populate("lastMessage", "content id type status createdAt");
-        return sendResponse(res, 201, populatedConversation, "New conversation created");
+        return sendResponse(res, 201, "New conversation created", populatedConversation);
     } catch (error) {
         res.send("Error::" + error.message);
     }
@@ -36,6 +36,16 @@ exports.conversation = async (req, res) => {
 exports.uploadFileMiddleware = chatUpload(
     uploadCloudinary.single("file")
 );
+
+exports.uploadFile = async (req, res) => {
+    try {
+        console.log("File uploaded:", req.file);
+        return sendResponse(res, 200, "File uploaded successfully", { fileUrl: req.fileUrl },);
+    } catch (error) {
+        res.send("Error::" + error.message);
+    }
+}
+
 exports.sendMessage = async (req, res) => {
     try {
         const { conversationId, content } = req.body;
@@ -111,9 +121,13 @@ exports.sendMessage = async (req, res) => {
 
 
 exports.getMessages = async (req, res) => {
+    console.log("API CALLED")
     try {
         const { conversationId } = req.params;
-        const { before, limit = 20 } = req.query; // before = cursor (timestamp or messageId)
+        const { before, limit = 10 } = req.query; // before = cursor (timestamp or messageId)
+
+        console.log("BEFORE", before)
+        console.log("LIMIT", limit)
 
         // 1. Validate ObjectId
         if (!mongoose.Types.ObjectId.isValid(conversationId)) {
@@ -140,7 +154,7 @@ exports.getMessages = async (req, res) => {
         // 4. Build query with cursor
         const query = { conversationId };
 
-        if (before) {
+        if (before && before !== 'null') {
             // If before is a valid ObjectId → use it as cursor
             if (mongoose.Types.ObjectId.isValid(before)) {
                 query._id = { $lt: before };
@@ -152,7 +166,7 @@ exports.getMessages = async (req, res) => {
 
         // 5. Fetch messages
         const messages = await Message.find(query)
-            .populate("senderId", "name profilePic _id")
+            .populate("senderId", "name profilePic _id role")
             .sort({ createdAt: -1 }) // newest first
             .limit(parseInt(limit));
 
@@ -166,7 +180,8 @@ exports.getMessages = async (req, res) => {
             nextCursor: messages.length ? messages[0]._id : null // pass oldest messageId as next cursor
         };
 
-        return sendResponse(res, 200, orderedMessages, "Messages fetched successfully", meta);
+
+        return sendResponse(res, 200, "Messages fetched successfully", orderedMessages, meta);
     } catch (error) {
         res.send("Error::" + error.message);
     }
@@ -174,7 +189,7 @@ exports.getMessages = async (req, res) => {
 
 exports.getConversations = async (req, res) => {
     try {
-        const { before, limit = 20 } = req.query; // cursor = updatedAt
+        const { before, limit = 10 } = req.query; // cursor = updatedAt
         const queryLimit = parseInt(limit);
 
         // 1. Build filter based on role
@@ -193,7 +208,7 @@ exports.getConversations = async (req, res) => {
             .populate("clientId", "name email profilePic")
             .populate({
                 path: "lastMessage",
-                populate: { path: "senderId", select: "name profilePic" },
+                populate: { path: "senderId", select: "name role" },
             })
             .sort({ updatedAt: -1 }) // newest first
             .limit(queryLimit);
@@ -209,8 +224,8 @@ exports.getConversations = async (req, res) => {
         return sendResponse(
             res,
             200,
-            conversations,
             "Conversations fetched successfully",
+            conversations,
             meta
         );
     } catch (error) {
@@ -253,3 +268,19 @@ exports.markAsRead = async (req, res) => {
     }
 };
 
+exports.getAllConversations = async (req, res) => {
+    try {
+        // return all the conversations
+        const conversations = await Conversation.find()
+            .populate("clientId", "name email profilePic")
+            .populate({
+                path: "lastMessage",
+                populate: { path: "senderId", select: "_id name email profilePic role" },
+            })
+            .sort({ updatedAt: -1 });
+
+        return sendResponse(res, 200, "All conversations fetched successfully", conversations);
+    } catch (error) {
+        res.send("Error::" + error.message);
+    }
+}
