@@ -40,7 +40,6 @@ exports.uploadFileMiddleware = chatUpload(
 
 exports.uploadFile = async (req, res) => {
     try {
-        console.log("File uploaded:", req.file);
         return sendResponse(res, 200, "File uploaded successfully", { fileUrl: req.fileUrl },);
     } catch (error) {
         res.send("Error::" + error.message);
@@ -48,22 +47,17 @@ exports.uploadFile = async (req, res) => {
 }
 
 exports.sendProjectMessage = async (req, res) => {
-    console.log("Sending project message");
     try {
         const { clientId, messageContent } = req.body;
         const senderId = req.user._id;
 
-        // Fetch conversation + sender in parallel
-        let [conversation, sender] = await Promise.all([
-            Conversation.find({ clientId: clientId }),
-            User.findById(senderId),
-        ]);
+        // Fetch conversation + sender
+
+        let conversation = await Conversation.findOne({ clientId: clientId });
+        let sender = await User.findById(senderId);
 
         if (!sender) return sendResponse(res, 400, null, "User not found");
-        console.log("CONVERSATION", conversation)
-        // let newConversation;
-        if (conversation.length === 0) {
-            console.log("create conversation");
+        if (!conversation) {
             //Create Conversation
             conversation = await Conversation.create({
                 clientId,
@@ -81,7 +75,7 @@ exports.sendProjectMessage = async (req, res) => {
 
         // Create message
         const newMessage = await Message.create({
-            conversationId: conversation[0]._id,
+            conversationId: conversation._id,
             senderId,
             type: messageType,
             content: messageContent,
@@ -95,7 +89,7 @@ exports.sendProjectMessage = async (req, res) => {
             unreadUpdate = { $inc: { clientUnread: 1 } };
 
         await Conversation.findByIdAndUpdate(
-            conversation[0]._id,
+            conversation._id,
             { lastMessage: newMessage._id, ...unreadUpdate },
             { new: true }
         );
@@ -109,15 +103,15 @@ exports.sendProjectMessage = async (req, res) => {
             return sendResponse(res, 404, null, "Message not sent");
         }
 
-        return sendResponse(res, 200, "Message sent successfully", { conversationId: conversation[0]._id, clientId: conversation[0].clientId });
+        return sendResponse(res, 200, "Message sent successfully", { conversationId: conversation._id, clientId: conversation.clientId });
     } catch (error) {
+        console.error("Error sending project message:", error);
         res.send("Error::" + error.message);
     }
 };
 
 
 exports.sendInvoiceMessage = async (req, res) => {
-    console.log("Sending invoice message");
     try {
         const { projectId, messageContent } = req.body;
         const senderId = req.user._id;
@@ -131,17 +125,13 @@ exports.sendInvoiceMessage = async (req, res) => {
 
         clientId = project.clientId;
 
-        // Fetch conversation + sender in parallel
-        let [conversation, sender] = await Promise.all([
-            Conversation.find({ clientId: clientId }),
-            User.findById(senderId),
-        ]);
+        // Fetch conversation + sender
+        let conversation = await Conversation.findOne({ clientId: clientId });
+        let sender = await User.findById(senderId);
 
         if (!sender) return sendResponse(res, 400, null, "User not found");
-        console.log("CONVERSATION", conversation)
         // let newConversation;
-        if (conversation.length === 0) {
-            console.log("create conversation");
+        if (!conversation) {
             //Create Conversation
             conversation = await Conversation.create({
                 clientId,
@@ -164,7 +154,7 @@ exports.sendInvoiceMessage = async (req, res) => {
         }
         // Create message
         const newMessage = await Message.create({
-            conversationId: conversation[0]._id,
+            conversationId: conversation._id,
             senderId,
             type: messageType,
             content: sendMessage,
@@ -178,7 +168,7 @@ exports.sendInvoiceMessage = async (req, res) => {
             unreadUpdate = { $inc: { clientUnread: 1 } };
 
         await Conversation.findByIdAndUpdate(
-            conversation[0]._id,
+            conversation._id,
             { lastMessage: newMessage._id, ...unreadUpdate },
             { new: true }
         );
@@ -192,7 +182,7 @@ exports.sendInvoiceMessage = async (req, res) => {
             return sendResponse(res, 404, null, "Message not sent");
         }
 
-        return sendResponse(res, 200, "Message sent successfully", { conversationId: conversation[0]._id, clientId: conversation[0].clientId });
+        return sendResponse(res, 200, "Message sent successfully", { conversationId: conversation._id, clientId: conversation.clientId });
     } catch (error) {
         res.send("Error::" + error.message);
     }
