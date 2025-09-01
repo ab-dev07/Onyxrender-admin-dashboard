@@ -2,6 +2,7 @@ const { sendResponse } = require("../utils/standardResponse");
 const Project = require("../models/project");
 const { Invoice } = require("../models/invoice");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const { sendPaymentReceiptEmail } = require("../utils/sendMail");
 
 exports.user_insights = async (req, res) => {
   try {
@@ -113,19 +114,46 @@ exports.stripe_webhook = async (req, res) => {
 
   // Handle event types
   if (event.type === "checkout.session.completed") {
-  const session = event.data.object;
-  console.log("✅ Checkout session completed:", session.id);
+    const session = event.data.object;
+    console.log("✅ Checkout session completed:", session.id);
 
     const invoiceId = session.metadata?.invoiceId;
     if (invoiceId && invoiceId !== "N/A") {
       try {
-        const updateInvoice = await Invoice.findByIdAndUpdate(invoiceId, { status: "paid" });
+        await Invoice.findByIdAndUpdate(invoiceId, { status: "paid" });
+
+        // Fetch invoice with project and client to get email and context
+        const populatedInvoice = await Invoice.findById(invoiceId)
+          .populate({
+            path: "projectId",
+            select: "title clientId",
+            populate: { path: "clientId", select: "email" },
+          })
+          .lean();
+
+        const clientEmail = populatedInvoice?.projectId?.clientId?.email;
+        const projectTitle = populatedInvoice?.projectId?.title;
+        const amount = populatedInvoice?.amount;
+        const currency = populatedInvoice?.currency || "USD";
+
+        if (clientEmail) {
+          await sendPaymentReceiptEmail(clientEmail, {
+            projectTitle,
+            amount,
+            currency,
+            invoiceId,
+            paymentIntentId: session.payment_intent,
+            sessionId: session.id,
+            paidAt: Date.now(),
+          });
+        } else {
+          console.warn(`No client email found for invoice ${invoiceId}`);
+        }
+      } catch (err) {
+        console.error(`❌ Error handling checkout completion for invoice ${invoiceId}:`, err);
       }
-      catch (err) {
-        console.error(`❌ Error updating invoice ${invoiceId}:`, err);
-      }
-  }
-} else {
+    }
+  } else {
     console.error(`Unhandled event type: ${event.type}`);
   }
 
