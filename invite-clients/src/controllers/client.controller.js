@@ -132,7 +132,6 @@ exports.stripe_webhook = async (req, res) => {
           .lean();
 
         const clientEmail = populatedInvoice?.projectId?.clientId?.email;
-        // const clientEmail = "tahapices@gmail.com"
         const projectTitle = populatedInvoice?.projectId?.title;
         const amount = populatedInvoice?.amount;
         const currency = populatedInvoice?.currency || "USD";
