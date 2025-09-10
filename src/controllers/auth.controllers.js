@@ -89,7 +89,7 @@ exports.login = async (req, res) => {
         res.cookie("token", token,  {
         httpOnly: true,
         secure: true,
-        sameSite: "none",
+        sameSite: "None",
       });
         return sendResponse(res, 200, "Admin Login Successfully", user);
       }
@@ -110,7 +110,12 @@ exports.login = async (req, res) => {
       return sendResponse(res, 400, "Email or Password is incorrect.");
     }
     const token = await user.getJWT();
-    res.cookie("token", token);
+    res.cookie("token", token,{
+      
+        httpOnly: true,
+        secure: true,
+        sameSite: "None",
+    });
     return sendResponse(res, 200, "Client Login Successfully", user);
   }
 };
