@@ -26,7 +26,7 @@ const { stripe_webhook } = require("./controllers/client.controller");
 
 const cors = require("cors");
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors({ origin: process.env.CLIENT_BASE_URL, credentials: true }));
 app.post(
   "/client/webhook",
   express.raw({ type: "application/json" }),
