@@ -86,7 +86,11 @@ exports.login = async (req, res) => {
         const user = await User.create({ email, password, role });
         await user.save();
         const token = await user.getJWT();
-        res.cookie("token", token);
+        res.cookie("token", token,  {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+      });
         return sendResponse(res, 200, "Admin Login Successfully", user);
       }
       const token = await user.getJWT();
