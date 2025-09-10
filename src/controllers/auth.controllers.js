@@ -94,7 +94,11 @@ exports.login = async (req, res) => {
         return sendResponse(res, 200, "Admin Login Successfully", user);
       }
       const token = await user.getJWT();
-      res.cookie("token", token);
+      res.cookie("token", token , {
+  httpOnly: true,
+  secure: true,        // required for SameSite=None
+  sameSite: "none",    // allow cross-site cookies
+});
       return sendResponse(res, 200, "Admin Login Successfully", user);
     }
 
