@@ -87,10 +87,10 @@ exports.login = async (req, res) => {
         await user.save();
         const token = await user.getJWT();
         res.cookie("token", token,  {
-        httpOnly: true,
-        secure: true,
-        sameSite: "None",
-      });
+  httpOnly: true,
+  secure: true,        // required for SameSite=None
+  sameSite: "none",    // allow cross-site cookies
+});
         return sendResponse(res, 200, "Admin Login Successfully", user);
       }
       const token = await user.getJWT();
@@ -110,12 +110,11 @@ exports.login = async (req, res) => {
       return sendResponse(res, 400, "Email or Password is incorrect.");
     }
     const token = await user.getJWT();
-    res.cookie("token", token,{
-      
-        httpOnly: true,
-        secure: true,
-        sameSite: "None",
-    });
+    res.cookie("token", token, {
+  httpOnly: true,
+  secure: true,        // required for SameSite=None
+  sameSite: "none",    // allow cross-site cookies
+});
     return sendResponse(res, 200, "Client Login Successfully", user);
   }
 };
