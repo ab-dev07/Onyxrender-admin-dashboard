@@ -22,7 +22,7 @@ exports.registerClient = async (req, res) => {
   if (alreadyUser) {
     return sendResponse(res, 400, "User already exist.");
   }
-  const invite = await Invite.findOne({ token });
+  const invite = await Invite.findOne({ token,email });
   if (role == "client") {
     email = invite.email;
     if (!invite) {
