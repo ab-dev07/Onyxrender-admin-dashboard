@@ -7,6 +7,7 @@ const {
   reset_password,
   change_password,
   get_profile,
+  logout,
 } = require("../controllers/auth.controllers");
 const { User } = require("../models/users");
 const { userSchemaValidate } = require("../validations/userSchemaValidate");
@@ -24,6 +25,7 @@ authRouter.post("/auth/login", login);
 authRouter.post("/auth/forget-password", forget_password);
 authRouter.post("/auth/reset-password", reset_password);
 authRouter.post("/auth/change-password", isLoggedIn, change_password);
+authRouter.post("/auth/logout", isLoggedIn, logout);
 
 //used to get the details of the logged in user
 authRouter.get("/auth/user", isLoggedIn, getUser);

@@ -22,7 +22,7 @@ exports.registerClient = async (req, res) => {
   if (alreadyUser) {
     return sendResponse(res, 400, "User already exist.");
   }
-  const invite = await Invite.findOne({ token,email });
+  const invite = await Invite.findOne({ token, email });
   if (role == "client") {
     email = invite.email;
     if (!invite) {
@@ -86,20 +86,20 @@ exports.login = async (req, res) => {
         const user = await User.create({ email, password, role });
         await user.save();
         const token = await user.getJWT();
-        res.cookie("token", token,  {
-  httpOnly: true,
-  secure: true,        // required for SameSite=None
-  sameSite: "none",    // allow cross-site cookies
-});
+        res.cookie("token", token, {
+          httpOnly: true,
+          secure: true,        // required for SameSite=None
+          sameSite: "none",    // allow cross-site cookies
+        });
         return sendResponse(res, 200, "Admin Login Successfully", user);
       }
       const token = await user.getJWT();
-      res.cookie("token", token , {
-  httpOnly: true,
-  secure: true,        // required for SameSite=None
-  sameSite: "none",    // allow cross-site cookies
-});
-      return sendResponse(res, 200, "Admin Login Successfully", user);
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: true,        // required for SameSite=None
+        sameSite: "none",    // allow cross-site cookies
+      });
+      return sendResponse(res, 200, "Admin Login Successfully", { user, token });
     }
 
     return sendResponse(res, 400, "You are not admin");
@@ -115,11 +115,11 @@ exports.login = async (req, res) => {
     }
     const token = await user.getJWT();
     res.cookie("token", token, {
-  httpOnly: true,
-  secure: true,        // required for SameSite=None
-  sameSite: "none",    // allow cross-site cookies
-});
-    return sendResponse(res, 200, "Client Login Successfully", user);
+      httpOnly: true,
+      secure: true,        // required for SameSite=None
+      sameSite: "none",    // allow cross-site cookies
+    });
+    return sendResponse(res, 200, "Client Login Successfully", { user, token });
   }
 };
 
@@ -222,3 +222,14 @@ exports.change_password = async (req, res) => {
 
   sendResponse(res, 200, "Password changed successfully.");
 };
+
+
+exports.logout = async (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    path: "/",
+  });
+  return sendResponse(res, 200, "Logout successful");
+}
