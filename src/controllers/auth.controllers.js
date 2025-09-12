@@ -220,6 +220,13 @@ exports.change_password = async (req, res) => {
   user.password = hashedPassword;
   await user.save();
 
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    path: "/",
+  });
+
   sendResponse(res, 200, "Password changed successfully.");
 };
 

@@ -68,7 +68,7 @@ const sendPaymentReceiptEmail = async (to, {
     from: "OnyxRender",
     to,
     subject,
-    text: `Payment received for ${projectTitle || "your project"}. Amount: ${currency} ${formattedAmount}. Invoice: ${invoiceId || "N/A"}. Paid at: ${paidDate}.` ,
+    text: `Payment received for ${projectTitle || "your project"}. Amount: ${currency} ${formattedAmount}. Invoice: ${invoiceId || "N/A"}. Paid at: ${paidDate}.`,
     html,
   };
 
@@ -80,7 +80,7 @@ const sendPaymentReceiptEmail = async (to, {
   }
 };
 const sendInvitationEmail = async (to, token) => {
-  const inviteLink = `http://localhost:3000/dashboard/register-client?token=${token}`;
+  const inviteLink = `${process.env.CLIENT_BASE_URL}/dashboard/register-client?token=${token}`;
   const mailOption = {
     from: "OnyxRender",
     to,
