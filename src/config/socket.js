@@ -6,7 +6,7 @@ function initSocket(httpServer) {
     const io = new Server(httpServer, {
         path: "/socket.io", // default
         cors: {
-            origin: process.env.FRONTEND_URL || "http://localhost:3000",
+            origin: process.env.CLIENT_BASE_URL || "http://localhost:3000",
             methods: ["GET", "POST"],
             credentials: true
         },
