@@ -1,6 +1,6 @@
 const express = require("express");
 const { isLoggedIn } = require("../middlewares/isLoggedIn");
-const { conversation, sendMessage, getMessages, getConversations, uploadFileMiddleware, markAsRead, getAllConversations, uploadFile, sendProjectMessage, sendInvoiceMessage } = require("../controllers/chat.controller");
+const { conversation, sendMessage, getMessages, getConversations, uploadFileMiddleware, markAsRead, getAllConversations, uploadFile, sendProjectMessage, sendInvoiceMessage, getInvoice, getProject } = require("../controllers/chat.controller");
 const { isAdmin } = require("../middlewares/isAdmin");
 
 
@@ -17,5 +17,7 @@ chatRouter.get("/messages/:conversationId", getMessages)
 chatRouter.get("/conversations", getConversations)
 chatRouter.post("/mark-as-read", markAsRead)
 chatRouter.get("/all-conversations", isAdmin, getAllConversations);
+chatRouter.post("/invoice", isLoggedIn, getInvoice);
+chatRouter.post("/project", isLoggedIn, getProject);
 
 module.exports = { chatRouter };

@@ -28,6 +28,10 @@ const invoiceSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
     currency: {
       type: String,
       default: "USD",

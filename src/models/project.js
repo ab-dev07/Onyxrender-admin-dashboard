@@ -39,7 +39,11 @@ const projectSchema = new mongoose.Schema(
     },
     endDate: {
       type: Date,
-      required: true,
+      default: null,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
     description: {
       type: String,

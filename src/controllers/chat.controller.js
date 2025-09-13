@@ -6,6 +6,7 @@ const { mongoose } = require("mongoose");
 const { uploadCloudinary } = require("../middlewares/uploadCloudinary")
 const { chatUpload } = require("../utils/handleUpload");
 const Project = require("../models/project");
+const { Invoice } = require("../models/invoice");
 
 exports.conversation = async (req, res) => {
     try {
@@ -352,5 +353,51 @@ exports.getAllConversations = async (req, res) => {
         return sendResponse(res, 200, "All conversations fetched successfully", conversations);
     } catch (error) {
         res.send("Error::" + error.message);
+    }
+}
+
+exports.getInvoice = async (req, res) => {
+    try {
+        const { id } = req.body;
+        if (!id) {
+            return sendResponse(res, 400, "Invoice id not found");
+        }
+
+        const invoice = await Invoice.findById(id).populate({
+            path: "projectId",
+            select: "title description clientId",
+            populate: {
+                path: "clientId",
+                select: "name profilePic email",
+            },
+        })
+        if (!invoice) {
+            return sendResponse(res, 400, "Invoice not found with this id");
+        }
+
+
+        return sendResponse(res, 200, "Invoice found", invoice);
+    } catch (error) {
+        console.error(error)
+        res.send("err::" + error.message);
+    }
+}
+
+exports.getProject = async (req, res) => {
+    try {
+        const { id } = req.body;
+        if (!id) {
+            return sendResponse(res, 400, "Project id not found");
+        }
+
+        const project = await Project.findById(id)
+        if (!project) {
+            return sendResponse(res, 400, "Project not found with this id");
+        }
+
+        return sendResponse(res, 200, "Project found", project);
+    } catch (error) {
+        console.error(error)
+        res.send("err::" + error.message);
     }
 }

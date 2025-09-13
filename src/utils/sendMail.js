@@ -68,7 +68,7 @@ const sendPaymentReceiptEmail = async (to, {
     from: "OnyxRender",
     to,
     subject,
-    text: `Payment received for ${projectTitle || "your project"}. Amount: ${currency} ${formattedAmount}. Invoice: ${invoiceId || "N/A"}. Paid at: ${paidDate}.` ,
+    text: `Payment received for ${projectTitle || "your project"}. Amount: ${currency} ${formattedAmount}. Invoice: ${invoiceId || "N/A"}. Paid at: ${paidDate}.`,
     html,
   };
 
@@ -80,26 +80,58 @@ const sendPaymentReceiptEmail = async (to, {
   }
 };
 const sendInvitationEmail = async (to, token) => {
-  const inviteLink = `http://localhost:3000/dashboard/register-client?token=${token}`;
+  const inviteLink = `${process.env.CLIENT_BASE_URL}/dashboard/register-client/${token}`;
+
   const mailOption = {
-    from: "OnyxRender",
+    from: '"OnyxRender" <no-reply@onyxrender.com>', // ✅ better "from" format
     to,
-    subject: "Invitation",
-    text: `Click the link to join: ${inviteLink}`,
+    subject: "You're Invited to OnyxRender!",
+    text: `You've been invited to join OnyxRender. Use the following link to register: ${inviteLink}`,
     html: `
-      <h2>You're Invited!</h2>
-      <p>Click the link below to join:</p>
-      <a href="${inviteLink}" style="font-size:18px; font-weight:bold; color:#3366cc">Join</a></a>
-      <p>This link will expire in 10 minutes.</p>
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">
+        
+        <!-- Header -->
+        <div style="background: #0f172a; padding: 20px; text-align: center;">
+          <h1 style="color: #fff; margin: 0; font-size: 24px;">OnyxRender Invitation</h1>
+        </div>
+        
+        <!-- Body -->
+        <div style="padding: 24px;">
+          <h2 style="color: #0f172a; font-size: 20px;">You're Invited 🎉</h2>
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            You’ve been invited to join <strong>OnyxRender</strong>. Click the button below to complete your registration.
+          </p>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${inviteLink}" style="background: #2563eb; color: #fff; padding: 14px 28px; font-size: 16px; font-weight: bold; text-decoration: none; border-radius: 6px; display: inline-block;">
+              Join Now
+            </a>
+          </div>
+
+          <p style="font-size: 14px; color: #666;">
+            ⚠️ This link will expire in <strong>10 minutes</strong>. If the button above doesn’t work, copy and paste this URL into your browser:
+          </p>
+          <p style="font-size: 13px; word-break: break-all; color: #2563eb;">
+            ${inviteLink}
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: #f9fafb; padding: 16px; text-align: center; font-size: 12px; color: #999;">
+          © ${new Date().getFullYear()} OnyxRender. All rights reserved.
+        </div>
+      </div>
     `,
   };
+
   try {
     const info = await transporter.sendMail(mailOption);
-    console.log("Message sent:", info.messageId);
+    console.log("✅ Invitation email sent:", info.messageId);
   } catch (err) {
-    console.error("Mail error:", err);
+    console.error("❌ Mail error:", err);
   }
 };
+
 module.exports = {
   sendInvitationEmail,
   sendResetEmail,
