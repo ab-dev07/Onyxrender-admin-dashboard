@@ -101,11 +101,12 @@ exports.all_projects = async (req, res) => {
   const totalitems = await Project.countDocuments(filter);
   const totalpage = Math.ceil(totalitems / limit);
 
-  const allProjectsQuery = Project.find(filter)
+  const allProjectsQuery = Project.find({ ...filter, isDeleted: false })
     .select(projection)
-    .sort({ createdAt: -1 }) // ✅ latest first
+    .sort({ createdAt: -1 }) // latest first
     .skip(skip)
     .limit(limit);
+
 
   if (populate) {
     allProjectsQuery.populate(populate);
@@ -135,9 +136,13 @@ exports.delete_project = async (req, res) => {
   try {
     const id = req.params.id;
 
-    const deletedProject = await Project.findByIdAndDelete(id);
+    const deletedProject = await Project.findByIdAndUpdate(
+      id,
+      { isDeleted: true },
+      { new: true } // return the updated doc
+    );
     if (!deletedProject) {
-      return sendResponse(res, 400, "Project dont existed");
+      return sendResponse(res, 400, "Project don't existed");
     }
     sendResponse(res, 200, "Projects deleted successfully", deletedProject);
   } catch (err) {
@@ -287,7 +292,7 @@ exports.all_invoices = async (req, res) => {
     totalpage,
   };
 
-  const invoices = await Invoice.find()
+  const invoices = await Invoice.find({ isDeleted: false })
     .populate({
       path: "projectId",
       select: "title clientId",
@@ -336,7 +341,11 @@ exports.update_invoice = async (req, res) => {
   sendResponse(res, 200, "Invoice updated successfully", updatedInvoice);
 };
 exports.delete_invoice = async (req, res) => {
-  const deletedInvoice = await Invoice.findByIdAndDelete(req.params.id);
+  const deletedInvoice = await Invoice.findByIdAndUpdate(
+    req.params.id,
+    { isDeleted: true },
+    { new: true } // return the updated doc
+  );
 
   if (!deletedInvoice) {
     return sendResponse(res, 404, "Invoice not found");

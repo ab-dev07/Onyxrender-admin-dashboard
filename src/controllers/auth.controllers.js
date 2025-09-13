@@ -241,3 +241,25 @@ exports.logout = async (req, res) => {
   });
   return sendResponse(res, 200, "Logout successful");
 }
+
+exports.getEmailFromToken = async (req, res) => {
+  try {
+    const { token } = req.body
+
+    if (!token) {
+      return sendResponse(res, 400, "No Token Found.");
+    }
+    const inviteData = await Invite.findOne({ token: token });
+
+    if (!inviteData) {
+      return sendResponse(res, 400, "Invitation not found with the token");
+    }
+
+
+    console.log("INVITE DATA", inviteData)
+
+    return sendResponse(res, 200, "Invite Email Found.", { email: inviteData.email });
+  } catch (error) {
+
+  }
+}
