@@ -80,8 +80,8 @@ exports.payment = async (req, res) => {
         },
       ],
       mode: "payment",
-      success_url: "http://localhost:3000/dashboard/client/invoices",
-      cancel_url: "http://localhost:3000/dashboard/client/invoices",
+      success_url: `${process.env.CLIENT_BASE_URL}/dashboard/client/invoices`,
+      cancel_url: `${process.env.CLIENT_BASE_URL}/dashboard/client/invoices`,
       metadata: {
         invoiceId: id || "N/A", // optional, link to your invoice
       },
